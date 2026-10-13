@@ -154,6 +154,58 @@ func predict_action(state: Array) -> int:
 	return best
 
 
+## Export weights and biases to a Dictionary for serialization.
+func export_data() -> Dictionary:
+	return {
+		"layer_sizes": Array(layer_sizes),
+		"learning_rate": learning_rate,
+		"weights": weights,
+		"biases": biases
+	}
+
+
+## Import weights and biases from a Dictionary.
+func import_data(data: Dictionary) -> bool:
+	if not data.has("weights") or not data.has("biases"):
+		return false
+	weights = data["weights"]
+	biases = data["biases"]
+	if data.has("learning_rate"):
+		learning_rate = data["learning_rate"]
+	if data.has("layer_sizes"):
+		layer_sizes = PackedInt32Array(data["layer_sizes"])
+	return true
+
+
+## Save network parameters to JSON file.
+func save_to_json(filepath: String) -> bool:
+	var file := FileAccess.open(filepath, FileAccess.WRITE)
+	if file == null:
+		push_error("Failed to open file for writing: %s" % filepath)
+		return false
+	var json_str := JSON.stringify(export_data(), "\t")
+	file.store_string(json_str)
+	file.close()
+	return true
+
+
+## Load network parameters from JSON file.
+func load_from_json(filepath: String) -> bool:
+	if not FileAccess.file_exists(filepath):
+		push_warning("File does not exist: %s" % filepath)
+		return false
+	var file := FileAccess.open(filepath, FileAccess.READ)
+	if file == null:
+		return false
+	var content := file.get_as_text()
+	file.close()
+	var test_json_conv := JSON.new()
+	var err := test_json_conv.parse(content)
+	if err != OK:
+		return false
+	return import_data(test_json_conv.data)
+
+
 # ── Internal helpers ──
 
 func _mat_vec_mul(mat: Array, vec: Array) -> Array:

@@ -169,7 +169,7 @@ func _build_ui() -> void:
 	# Controls help (bottom-left)
 	_controls_label = Label.new()
 	_controls_label.name = "ControlsLabel"
-	_controls_label.text = "WASD: Move | RMB: Look | Scroll: Speed | F: Seeker | G: Hider | H: Overview\nTAB: Toggle HUD | R (x5): Reset RL | 1-4: Speed"
+	_controls_label.text = "WASD: Move | RMB: Look | Scroll: Speed | F: Seeker | G: Hider | H: Overview\nTAB: Toggle HUD | K: Save Q-Tables | R (x5): Reset RL | 1-4: Speed"
 	_controls_label.add_theme_font_size_override("font_size", 12)
 	_controls_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.65))
 	_controls_label.anchor_left = 0.0

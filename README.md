@@ -172,6 +172,7 @@ Each agent brain contains a feedforward Deep Q-Network:
 | `P` | **Pause / Resume** | Freeze simulation state to inspect Q-values. |
 | `TAB` | **Toggle HUD** | Show/hide stats overlay, timer, and minimap. |
 | `R` | **Reroll Map** | Regenerates procedural facility (preserves Q-tables). |
+| `K` | **Save Q-Tables** | Exports neural weights & Q-tables to `qtables/` inside the root project directory (`res://qtables`). |
 | `R` (Press 5×) | **Factory Reset** | Wipes learned weights & resets neural brains to baseline. |
 
 ---

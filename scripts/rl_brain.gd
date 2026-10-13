@@ -190,3 +190,53 @@ func reset_rl() -> void:
 	policy_net = NeuralNetwork.new(arch, LEARNING_RATE)
 	target_net = NeuralNetwork.new(arch, LEARNING_RATE)
 	target_net.copy_weights_from(policy_net)
+
+
+## Export complete brain state to Dictionary.
+func export_brain_data() -> Dictionary:
+	return {
+		"is_hider": is_hider,
+		"epsilon": epsilon,
+		"total_steps": total_steps,
+		"state_size": state_size,
+		"action_count": action_count,
+		"policy_net": policy_net.export_data(),
+		"target_net": target_net.export_data(),
+		"loss_history": loss_history.duplicate(),
+		"reward_history": total_reward_history.duplicate()
+	}
+
+
+## Save brain parameters to JSON file.
+func save_brain(filepath: String) -> bool:
+	var file := FileAccess.open(filepath, FileAccess.WRITE)
+	if file == null:
+		push_error("Failed to open file for writing: %s" % filepath)
+		return false
+	var json_str := JSON.stringify(export_brain_data(), "\t")
+	file.store_string(json_str)
+	file.close()
+	return true
+
+
+## Load brain parameters from JSON file.
+func load_brain(filepath: String) -> bool:
+	if not FileAccess.file_exists(filepath):
+		push_warning("File does not exist: %s" % filepath)
+		return false
+	var file := FileAccess.open(filepath, FileAccess.READ)
+	if file == null:
+		return false
+	var content := file.get_as_text()
+	file.close()
+	var parser := JSON.new()
+	if parser.parse(content) != OK:
+		return false
+	var data: Dictionary = parser.data
+	if data.has("epsilon"): epsilon = data["epsilon"]
+	if data.has("total_steps"): total_steps = data["total_steps"]
+	if data.has("policy_net"): policy_net.import_data(data["policy_net"])
+	if data.has("target_net"): target_net.import_data(data["target_net"])
+	if data.has("loss_history"): loss_history = data["loss_history"]
+	if data.has("reward_history"): total_reward_history = data["reward_history"]
+	return true

@@ -43,6 +43,10 @@ func _ready() -> void:
 	_setup_agent_windows()
 	_setup_reset_dialog()
 
+	# Automatically load existing Q-tables from root folder if available, or export initial models
+	load_all_qtables()
+	export_all_qtables()
+
 	# Start the first episode
 	turn_manager.start_episode()
 
@@ -61,13 +65,16 @@ func _ready() -> void:
 	print("  TAB          : Toggle HUD")
 	print("  1/2/3/4      : Sim speed (1x/5x/20x/100x)")
 	print("  R            : New map (press 5x to delete RL data)")
+	print("  K            : Save Q-tables to root folder")
 	print("  P            : Pause/Resume")
 	print("═══════════════════════════════════════════")
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed:
-		if event.keycode == KEY_R:
+		if event.keycode == KEY_K:
+			export_all_qtables()
+		elif event.keycode == KEY_R:
 			var now := Time.get_ticks_msec() / 1000.0
 			# If more than 4 seconds elapsed since last R press, reset count
 			if now - _last_r_press_time > 4.0:
@@ -84,6 +91,50 @@ func _unhandled_input(event: InputEvent) -> void:
 				if hud:
 					hud.show_toast("Map re-rolled (%d/5 'R' presses to reset RL)" % _r_press_count)
 				_regenerate_map()
+
+
+## Load existing neural Q-tables from res://qtables in the root project folder.
+func load_all_qtables() -> void:
+	var root_dir := ProjectSettings.globalize_path("res://qtables")
+	if not DirAccess.dir_exists_absolute(root_dir):
+		return
+
+	var target_agents: Array = [hider_agent, seeker_agent]
+	for a in target_agents:
+		if a != null and is_instance_valid(a):
+			a.load_agent_qtables(root_dir)
+
+
+## Export all neural brains / Q-tables to root project folder (res://qtables).
+func export_all_qtables() -> void:
+	var root_dir := ProjectSettings.globalize_path("res://qtables")
+	DirAccess.make_dir_recursive_absolute(root_dir)
+
+	var target_agents: Array = [hider_agent, seeker_agent]
+	for a in target_agents:
+		if a != null and is_instance_valid(a):
+			a.save_agent_qtables(root_dir)
+
+	if hud:
+		hud.show_toast("✓ Q-tables saved to root folder (res://qtables)!")
+	print("═══════════════════════════════════════════")
+	print("  ✓ Q-TABLES SAVED IN ROOT FOLDER:")
+	print("  Path: %s" % root_dir)
+	print("═══════════════════════════════════════════")
+
+
+func _delete_saved_qtables() -> void:
+	var root_dir := ProjectSettings.globalize_path("res://qtables")
+	if DirAccess.dir_exists_absolute(root_dir):
+		var dir := DirAccess.open(root_dir)
+		if dir:
+			dir.list_dir_begin()
+			var file_name := dir.get_next()
+			while file_name != "":
+				if not dir.current_is_dir() and file_name.ends_with(".json"):
+					dir.remove(file_name)
+				file_name = dir.get_next()
+			dir.list_dir_end()
 
 
 func _setup_reset_dialog() -> void:
@@ -104,6 +155,7 @@ func _on_reset_dialog_confirmed() -> void:
 	print("═══════════════════════════════════════════")
 	if turn_manager:
 		turn_manager.reset_all_rl()
+	_delete_saved_qtables()
 	_cached_q_grid.clear()
 	_regenerate_map()
 	if hud:
@@ -358,6 +410,9 @@ func _on_episode_ended(winner: String, episode: int) -> void:
 		hider_window.set_thought_data(hider_agent.get_thoughts())
 	if seeker_window and seeker_agent:
 		seeker_window.set_thought_data(seeker_agent.get_thoughts())
+
+	# Persist Q-tables to disk automatically
+	export_all_qtables()
 
 	# When round ends: restart, swap roles, and randomize map WITHOUT resetting Q-tables
 	call_deferred("_restart_with_new_map")

@@ -513,6 +513,27 @@ func reset_all_rl() -> void:
 	match_losses = 0
 
 
+## Save both hider and seeker brains to a directory.
+func save_agent_qtables(base_dir: String) -> void:
+	DirAccess.make_dir_recursive_absolute(base_dir)
+	var safe_name := agent_name.replace(" ", "_").replace("(", "").replace(")", "").to_lower()
+	if hider_brain:
+		hider_brain.save_brain(base_dir.path_join("%s_hider_brain.json" % safe_name))
+	if seeker_brain:
+		seeker_brain.save_brain(base_dir.path_join("%s_seeker_brain.json" % safe_name))
+
+
+## Load both hider and seeker brains from a directory.
+func load_agent_qtables(base_dir: String) -> void:
+	var safe_name := agent_name.replace(" ", "_").replace("(", "").replace(")", "").to_lower()
+	var hider_path := base_dir.path_join("%s_hider_brain.json" % safe_name)
+	var seeker_path := base_dir.path_join("%s_seeker_brain.json" % safe_name)
+	if hider_brain and FileAccess.file_exists(hider_path):
+		hider_brain.load_brain(hider_path)
+	if seeker_brain and FileAccess.file_exists(seeker_path):
+		seeker_brain.load_brain(seeker_path)
+
+
 # ── Private Helpers ──
 
 func _action_to_direction(action: int) -> Vector2i:
